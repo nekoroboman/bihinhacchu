@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<!-- 備品発注（ネコロボグループ）の入口ページ。
+     携帯のホーム画面に置いたとき、アイコンをロゴ・名前を「備品発注」にするためのページ
+     （GAS のページにはホーム画面のアイコンを付けられないため。2026-11-10 ユーザー「アプリをホームに入れるときアイコンにしてほしい」）。
+     中身は GAS のアプリ（下の PROD_APP_URL）を全画面で表示しているだけ。作りは求職者管理の入口ページ（chokuei-applicant-app/launcher/kyushoku）と同じ。
+     置き場所：GitHub Pages（README.md を参照）
+     ログインのトークン：アプリは入口ページの中で開くと、トークンを postMessage（type bihin-token）でここへ渡す。
+     ここはそれをアドレス（?t=）と保存場所に持ち、次に開くときアプリに ?t= を付けて渡す
+     （iPhone のホーム画面アプリは、アプリ側〔iframe の中〕の保存場所が閉じるたびに消えるため） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>備品発注</title>
+<meta name="description" content="ネコロボグループ 備品発注">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FFC800">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="備品発注">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root { --ink: #0f172a; --muted: #64748b; --bg: #f3f5fa; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif; color: var(--ink); }
+  /* 読み込み中（アプリが出るまで）：ロゴと文字 */
+  .loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .loading img { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 8px 24px rgba(15, 23, 42, .12); }
+  .loading p { margin: 0; font-size: 14px; font-weight: 700; }
+  .loading a { font-size: 13px; color: var(--muted); }
+  .loading a[hidden] { display: none; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; border: 0; background: transparent; visibility: hidden; }
+  iframe.ready { visibility: visible; } /* アプリが動き出すまでは「読み込んでいます」を見せる */
+</style>
+</head>
+<body>
+<div class="loading" aria-hidden="true">
+  <img src="apple-touch-icon.png" alt="">
+  <p>読み込んでいます…</p>
+  <a id="direct" href="#" hidden>開かないときはこちら</a>
+</div>
+<script>
+  /* Google のアカウントを2つ以上ログインしているブラウザだと、Google がアプリのアドレスを …/macros/u/1/s/… に変え、
+     iframe の中が「現在、ファイルを開くことができません」になる（求職者管理で 2026-11-04 に起きた）。
+     → アプリが動き出した合図（トークンの postMessage。起動時に必ず来る）が10秒来なければ、Google のログインを持ち込まない
+       iframe（credentialless。Chrome だけ）で開き直し、その端末では次から最初からそうする */
+  (function () {
+    var PROD_APP_URL = 'https://script.google.com/macros/s/AKfycbz4qjEylvgSiZ_t2etXOQ77ZuCGd7HhkKYUjtL0NNQ0k2ocyCf7o4dtesPJLhxxk5QBLw/exec';
+    /* このPCで試すとき（http://localhost:3022/launcher/）は、中をプレビュー（にせのデータ）にする */
+    var DEV = location.hostname === 'localhost';
+    var APP_URL = DEV ? location.origin + '/preview' : PROD_APP_URL;
+    function appOriginOk(o) { return DEV ? o === location.origin : /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(o); }
+    var KEY = 'bihin.t', CL_KEY = 'bihin.cl';
+    var WAIT_MS = 10000;
+    var canCl = 'credentialless' in HTMLIFrameElement.prototype; /* Chrome。Safari は無いが、もともと Google のログインを iframe に持ち込まない */
+    var direct = document.getElementById('direct');
+    function saved(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+    function save(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* 保存できなくても動く */ } }
+    var t = new URLSearchParams(location.search).get('t') || saved(KEY);
+    direct.href = APP_URL;
+    var frame = null, alive = false, timer = null;
+
+    function open(cl) {
+      if (frame) frame.remove();
+      frame = document.createElement('iframe');
+      frame.id = 'app'; frame.title = '備品発注';
+      if (cl) frame.credentialless = true; /* src より先に */
+      frame.src = APP_URL + (t ? '?t=' + encodeURIComponent(t) : '');
+      document.body.appendChild(frame);
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (alive) return;
+        if (!cl && canCl) { save(CL_KEY, '1'); open(true); return; } /* ログインを持ち込まずに開き直す */
+        frame.classList.add('ready'); direct.hidden = false; /* それでもだめなら、そのまま見せて、直接開く案内も出す */
+      }, WAIT_MS);
+    }
+
+    /* アプリからの知らせ：起動したとき・ログインしたとき・ログアウトしたときにトークンが来る */
+    window.addEventListener('message', function (e) {
+      if (!appOriginOk(e.origin)) return;
+      var d = e.data || {};
+      if (d.type !== 'bihin-token') return;
+      if (!alive) { alive = true; clearTimeout(timer); frame.classList.add('ready'); }
+      t = String(d.t || '');
+      save(KEY, t);
+      try { history.replaceState(null, '', location.pathname + (t ? '?t=' + encodeURIComponent(t) : '')); } catch (err) { /* アドレスを変えられなくても動く */ }
+    });
+
+    open(canCl && saved(CL_KEY) === '1');
+  })();
+</script>
+</body>
+</html>
