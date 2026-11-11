@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <!-- 備品発注（ネコロボグループ）の入口ページ。
-     携帯のホーム画面に置いたとき、アイコンをロゴ・名前を「備品発注」にするためのページ
+     携帯のホーム画面に置いたとき、アイコンをロゴ・名前を「ネコロボストア」（2026-11-11〜。前は「備品発注」）にするためのページ
      （GAS のページにはホーム画面のアイコンを付けられないため。2026-11-10 ユーザー「アプリをホームに入れるときアイコンにしてほしい」）。
      中身は GAS のアプリ（下の PROD_APP_URL）を全画面で表示しているだけ。作りは求職者管理の入口ページ（chokuei-applicant-app/launcher/kyushoku）と同じ。
      置き場所：GitHub Pages（README.md を参照）
@@ -11,13 +11,13 @@
      ここはそれをアドレス（?t=）と保存場所に持ち、次に開くときアプリに ?t= を付けて渡す
      （iPhone のホーム画面アプリは、アプリ側〔iframe の中〕の保存場所が閉じるたびに消えるため） -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>備品発注</title>
-<meta name="description" content="ネコロボグループ 備品発注">
+<title>ネコロボストア</title>
+<meta name="description" content="ネコロボグループ ネコロボストア（備品・広告のご注文）">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FFC800">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="備品発注">
+<meta name="apple-mobile-web-app-title" content="ネコロボストア">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -67,7 +67,7 @@
     function open(cl) {
       if (frame) frame.remove();
       frame = document.createElement('iframe');
-      frame.id = 'app'; frame.title = '備品発注';
+      frame.id = 'app'; frame.title = 'ネコロボストア';
       if (cl) frame.credentialless = true; /* src より先に */
       frame.src = APP_URL + (t ? '?t=' + encodeURIComponent(t) : '');
       document.body.appendChild(frame);
