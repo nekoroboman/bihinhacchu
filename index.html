@@ -10,7 +10,7 @@
      ログインのトークン：アプリは入口ページの中で開くと、トークンを postMessage（type bihin-token）でここへ渡す。
      ここはそれをアドレス（?t=）と保存場所に持ち、次に開くときアプリに ?t= を付けて渡す
      （iPhone のホーム画面アプリは、アプリ側〔iframe の中〕の保存場所が閉じるたびに消えるため） -->
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ネコロボストア</title>
 <meta name="description" content="ネコロボグループ ネコロボストア（備品・広告のご注文）">
 <meta name="robots" content="noindex, nofollow">
@@ -25,7 +25,7 @@
 <link rel="manifest" href="manifest.json">
 <style>
   :root { --ink: #0f172a; --muted: #64748b; --bg: #f3f5fa; }
-  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; touch-action: pan-x pan-y; } /* 携帯で拡大させない */
   body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif; color: var(--ink); }
   /* 読み込み中（アプリが出るまで）：ロゴと文字 */
   .loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
@@ -48,6 +48,13 @@
      iframe の中が「現在、ファイルを開くことができません」になる（求職者管理で 2026-11-04 に起きた）。
      → アプリが動き出した合図（トークンの postMessage。起動時に必ず来る）が10秒来なければ、Google のログインを持ち込まない
        iframe（credentialless。Chrome だけ）で開き直し、その端末では次から最初からそうする */
+  /* 携帯で拡大させない（iPhone の Safari は user-scalable=no が効かないので、2本指の拡大を止める） */
+  (function () {
+    function stop(e) { e.preventDefault(); }
+    document.addEventListener('gesturestart', stop, { passive: false });
+    document.addEventListener('gesturechange', stop, { passive: false });
+    document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  })();
   (function () {
     var PROD_APP_URL = 'https://script.google.com/macros/s/AKfycbz4qjEylvgSiZ_t2etXOQ77ZuCGd7HhkKYUjtL0NNQ0k2ocyCf7o4dtesPJLhxxk5QBLw/exec';
     /* このPCで試すとき（http://localhost:3022/launcher/）は、中をプレビュー（にせのデータ）にする */
